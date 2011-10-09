@@ -14,7 +14,7 @@ Vcs-Browser: http://git.debian.org/?p=collab-maint/runsnakerun.git;a=summary
 
 Package: runsnakerun
 Architecture: all
-Depends: python2.5, python-squaremap, ${python:Depends}, ${shlibs:Depends}, ${misc:Depends}
+Depends: python-squaremap, ${python:Depends}, ${shlibs:Depends}, ${misc:Depends}
 Description: GUI utility for (Python) cProfile or Profile profiler dumps
  RunSnakeRun is a small GUI utility that allows you to view (Python) cProfile or
  Profile profiler dumps in a sortable GUI view.
