@@ -1,0 +1,5 @@
+runsnakerun (2.0.2a1-1) unstable; urgency=low
+
+  * Initial release (Closes: #575604)
+
+ -- Federico Ceratto <federico.ceratto@gmail.com>  Sun, 09 Oct 2011 11:09:06 +0000
