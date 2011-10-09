@@ -5,7 +5,6 @@
 
 
 override_dh_fixperms:
-	dh_fixperms
 	find ./debian/runsnakerun/ -executable -type f -exec chmod -x "{}" \;
-	find ./debian/runsnakerun/usr/bin/ -type f -exec chmod +x "{}" \;
+	dh_fixperms
 
