@@ -1,0 +1,40 @@
+.\"                                      Hey, EMACS: -*- nroff -*-
+.TH RUNSNAKE 1 "November 17, 2010"
+.SH NAME
+runsnake \- GUI utility for Python profiling
+.SH SYNOPSIS
+.B runsnake
+.RI [file] ...
+.br
+.SH DESCRIPTION
+This manual page documents briefly the
+.B runsnake
+command.
+.PP
+\fBrunsnake\fP creates a visual map of the profile data gathered by the Profile
+and cProfile Python modules.
+.SH OPTIONS
+.B runsnake
+has no options.
+.SH USAGE
+Gather profiling data by running your Python script as in:
+.br
+.B python
+-m cProfile -o <outputfilename> <script-name> <options>
+.PP
+Run
+.B runsnake
+on the output file:
+.br
+.B runsnake
+<outputfilename>
+.br
+or open the output file from the GUI menu.
+.PP
+More detailed documentation is available at
+.br
+.IR http://www.vrplumber.com/programming/runsnakerun/
+.SH AUTHOR
+runsnake was written by Mike C. Fletcher <mcfletch@vrplumber.com>.
+.PP
+This manual page was written by Federico Ceratto <federico.ceratto@gmail.com> for the Debian project and may be used by others.
