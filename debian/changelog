@@ -1,3 +1,9 @@
+runsnakerun (2.0.2a1-2) unstable; urgency=low
+
+  * Dependency on python-setuptools added (Closes: #647519)
+
+ -- Federico Ceratto <federico.ceratto@gmail.com>  Thu, 03 Nov 2011 21:39:37 +0000
+
 runsnakerun (2.0.2a1-1) unstable; urgency=low
 
   * Initial release (Closes: #575604)

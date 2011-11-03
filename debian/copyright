@@ -1,5 +1,5 @@
-Format: http://dep.debian.net/deps/dep5
-Source: http://api.mongodb.org/python/
+Format: http://anonscm.debian.org/viewvc/dep/web/deps/dep5.mdwn?revision=202
+Source: http://www.vrplumber.com/programming/runsnakerun
 
 Files: *
 Copyright: © 2011, Mike C. Fletcher <mcfletch@vrplumber.com>
