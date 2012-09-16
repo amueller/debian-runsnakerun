@@ -28,4 +28,3 @@ runsnakerun/meliaeloader.py
 runsnakerun/pstatsadapter.py
 runsnakerun/pstatsloader.py
 runsnakerun/runsnake.py
-runsnakerun/resources/rsricon.png
