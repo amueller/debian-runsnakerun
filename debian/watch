@@ -1,3 +1,2 @@
 version=3
-
-http://www.vrplumber.com/programming/runsnakerun/ http://pypi\.python\.org/packages/source/R/RunSnakeRun/RunSnakeRun-(.*)\.tar\.gz
+http://pypi.python.org/packages/source/R/RunSnakeRun/RunSnakeRun-([\w\.]*)\.tar\.gz
