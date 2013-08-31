@@ -1,10 +1,10 @@
-runsnakerun (2.0.3-1) UNRELEASED; urgency=low
+runsnakerun (2.0.3-1) unstable; urgency=low
 
   * New upstream release (Closes: #685205)
-  * Standards-Version bumped to 3.9.3
+  * Standards-Version bumped to 3.9.4
   * Debhelper version bumped to 9
 
- -- Federico Ceratto <federico.ceratto@gmail.com>  Sat, 31 Aug 2013 18:36:29 +0100
+ -- Federico Ceratto <federico.ceratto@gmail.com>  Sat, 31 Aug 2013 18:42:52 +0100
 
 runsnakerun (2.0.2a1-2) unstable; urgency=low
 
