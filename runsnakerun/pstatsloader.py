@@ -1,20 +1,46 @@
 """Module to load cProfile/profile records as a tree of records"""
 import pstats, os, logging
 log = logging.getLogger(__name__)
-#log.setLevel( logging.DEBUG )
 from gettext import gettext as _
 
 TREE_CALLS, TREE_FILES = range( 2 )
 
 class PStatsLoader( object ):
-    """Load profiler statistic from """
+    """Load profiler statistics from PStats (cProfile) files"""
     def __init__( self, *filenames ):
         self.filename = filenames
         self.rows = {}
+        self.roots = {}
+        self.location_rows = {}
         self.stats = pstats.Stats( *filenames )
         self.tree = self.load( self.stats.stats )
-        self.location_rows = {}
         self.location_tree = l = self.load_location( )
+    
+    ROOTS = ['functions','location']
+
+    def get_root( self, key ):
+        """Retrieve a given declared root by root-type-key"""
+        if key not in self.roots:
+            function = getattr( self, 'load_%s'%(key,) )()
+            self.roots[key] = function
+        return self.roots[key]
+    def get_rows( self, key ):
+        """Get the set of rows for the type-key"""
+        if key not in self.roots:
+            self.get_root( key )
+        if key == 'location':
+            return self.location_rows 
+        else:
+            return self.rows
+    def get_adapter( self, key ):
+        from runsnakerun import pstatsadapter
+        if key == 'functions':
+            return pstatsadapter.PStatsAdapter()
+        elif key == 'location':
+            return pstatsadapter.DirectoryViewAdapter()
+        else:
+            raise KeyError( """Unknown root type %s"""%( key, ))
+    
     def load( self, stats ):
         """Build a squaremap-compatible model from a pstats class"""
         rows = self.rows
@@ -26,7 +52,12 @@ class PStatsLoader( object ):
         for row in rows.itervalues():
             row.weave( rows )
         return self.find_root( rows )
-
+    
+    
+    def load_functions( self ):
+        """Load function records from the pstats file"""
+        return self.load()
+    
     def find_root( self, rows ):
         """Attempt to find/create a reasonable root node from list/set of rows
 
@@ -34,10 +65,10 @@ class PStatsLoader( object ):
 
         TODO: still need more robustness here, particularly in the case of
         threaded programs.  Should be tracing back each row to root, breaking
-        cycles by sorting on cummulative time, and then collecting the traced
+        cycles by sorting on cumulative time, and then collecting the traced
         roots (or, if they are all on the same root, use that).
         """
-        maxes = sorted( rows.values(), key = lambda x: x.cummulative )
+        maxes = sorted( rows.values(), key = lambda x: x.cumulative )
         if not maxes:
             raise RuntimeError( """Null results!""" )
         root = maxes[-1]
@@ -56,8 +87,14 @@ class PStatsLoader( object ):
             )
             root.finalize()
             self.rows[ root.key ] = root
+        self.roots['functions'] = root
         return root
     def load_location( self ):
+        """Load the location root record (loading regular records if necessary)"""
+        if not self.rows:
+            self.load()
+        return self._load_location()
+    def _load_location( self ):
         """Build a squaremap-compatible model for location-based hierarchy"""
         directories = {}
         files = {}
@@ -136,7 +173,7 @@ class PStatRow( BaseStat ):
             raise ValueError( 'Null stats row' )
         (
             self.calls, self.recursive, self.local, self.localPer,
-            self.cummulative, self.cummulativePer, self.directory,
+            self.cumulative, self.cumulativePer, self.directory,
             self.filename, self.name, self.lineno
         ) = (
             nc,
@@ -164,7 +201,7 @@ class PStatRow( BaseStat ):
                 self.parents.append( parent )
                 parent.children.append( self )
     def child_cumulative_time( self, child ):
-        total = self.cummulative
+        total = self.cumulative
         if total:
             try:
                 (cc,nc,tt,ct) = child.callers[ self.key ]
@@ -177,7 +214,7 @@ class PStatRow( BaseStat ):
 
 class PStatGroup( BaseStat ):
     """A node/record that holds a group of children but isn't a raw-record based group"""
-    # if LOCAL_ONLY then only take the raw-record's local values, not cummulative values
+    # if LOCAL_ONLY then only take the raw-record's local values, not cumulative values
     LOCAL_ONLY = False
     def __init__( self, directory='', filename='', name='', children=None, local_children=None, tree=TREE_CALLS ):
         self.directory = directory
@@ -207,8 +244,8 @@ class PStatGroup( BaseStat ):
     def filter_children( self ):
         """Filter our children into regular and local children sets (if appropriate)"""
     def calculate_totals( self, children, local_children=None ):
-        """Calculate our cummulative totals from children and/or local children"""
-        for field,local_field in (('recursive','calls'),('cummulative','local')):
+        """Calculate our cumulative totals from children and/or local children"""
+        for field,local_field in (('recursive','calls'),('cumulative','local')):
             values = []
             for child in children:
                 if isinstance( child, PStatGroup ) or not self.LOCAL_ONLY:
@@ -218,7 +255,7 @@ class PStatGroup( BaseStat ):
             value = sum( values )
             setattr( self, field, value )
         if self.recursive:
-            self.cummulativePer = self.cummulative/float(self.recursive)
+            self.cumulativePer = self.cumulative/float(self.recursive)
         else:
             self.recursive = 0
         if local_children:
