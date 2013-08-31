@@ -1,17 +1,6 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html dir="ltr" lang="en-ca"><head>
 
-
-
-
-
-
-
-
-
-
-
-
   <link rel="icon" type="image/png" href="/maps/favicon.png">
   <meta http-equiv="content-type" content="text/html; charset=ISO-8859-1"><title>RunSnakeRun Python (c)Profile Viewer</title>
   
@@ -29,7 +18,7 @@ using the same basic visualisations.<br>
 <h2>Features</h2><p>RunSnakeRun is a simple program, it doesn't provide
 all the bells-and-whistles of a program like KCacheGrind, it's intended
 to allow for profiling your Python programs, and just your Python
-programs. &nbsp;What it does provide, for profile viewing:</p><ul><li>sortable data-grid views for raw profile information</li><ul><li>identity: function name, file-name, directory name</li><li>time-spent: cummulative, cummulative-per, local and local-per time</li></ul><ul><li>overall data-grid view</li><li>(all) callers-of-this-function, (all) callees-of-this-function views</li></ul><li>squaremap view of call tree</li><ul><li>size proportional to amount of time spent by the given parent in the given function</li></ul><li>squaremap view of packages/modules/functions</li><ul><li>size proportional to time spent in each package/module/function</li></ul><li>basic navigation (home, back, up)</li></ul><p>For <a href="https://launchpad.net/meliae">Meliae</a> memory-dump viewing, it provides:</p>
+programs. &nbsp;What it does provide, for profile viewing:</p><ul><li>sortable data-grid views for raw profile information</li><ul><li>identity: function name, file-name, directory name</li><li>time-spent: cumulative, cumulative-per, local and local-per time</li></ul><ul><li>overall data-grid view</li><li>(all) callers-of-this-function, (all) callees-of-this-function views</li></ul><li>squaremap view of call tree</li><ul><li>size proportional to amount of time spent by the given parent in the given function</li></ul><li>squaremap view of packages/modules/functions</li><ul><li>size proportional to time spent in each package/module/function</li></ul><li>basic navigation (home, back, up)</li></ul><p>For <a href="https://launchpad.net/meliae">Meliae</a> memory-dump viewing, it provides:</p>
 <ul>
   <li>sortable data-grid views</li>
   <li>squaremap of memory-usage</li>
@@ -67,7 +56,7 @@ command-line.<br>
 <p>If you are new to profiling you may wish to check out:</p>
 
 <ul>
-<li>my (<a href="http://www.vrplumber.com/">Mike Fletcher</a>'s) <a href="http://us.pycon.org/2009/conference/schedule/event/15/">presentation at PyCon 2009</a> which tries to explain the use of profiling as a tool for optimization in Python<br>
+<li>my (<a href="http://www.vrplumber.com/">Mike Fletcher</a>'s) <a href="http://blip.tv/pycon-us-videos-2009-2010-2011/introduction-to-python-profiling-1966784">presentation at PyCon 2009</a> which tries to explain the use of profiling as a tool for optimization in Python<br>
   </li><li><a href="http://blip.tv/file/3988199">W. Matthew Wilson's presentation at PyOhio</a> on optimizing Python code<br>
   </li>
 </ul>
@@ -161,8 +150,14 @@ save that RunSnakeRun was intended to be Python specific and
 cross-platform</li><li><a href="http://pypi.python.org/pypi/profilehooks">profilehooks</a> -- specify which function to profile by using a decorator on a particular function</li></ul>
 <h2><a name="download"></a>Releases/Downloads</h2>
 <ul>
-  <li><a href="http://pypi.python.org/packages/source/R/RunSnakeRun/RunSnakeRun-2.0.2a1.tar.gz">2.0.2a1</a> -- Stores window position and size in config file<br>
+  <li><a href="http://pypi.python.org/packages/source/R/RunSnakeRun/RunSnakeRun-2.0.3.tar.gz">2.0.3</a>
+-- Stores list control column widths in config file (contributed by
+Gerald Dalley), minor bug-fixes, coldshot profiler support, wxPython
+compatability, do not use separators on OSX<br>
 </li>
+  <li><a href="http://pypi.python.org/packages/source/R/RunSnakeRun/RunSnakeRun-2.0.2a1.tar.gz">2.0.2a1</a> -- Stores window position and size in config file<br>
+  </li>
+
   <li><a href="http://pypi.python.org/packages/source/R/RunSnakeRun/RunSnakeRun-2.0.1.tar.gz">2.0.1</a> -- Fix for OS-X loading (32-bit mode forced)<br>
   </li>
 

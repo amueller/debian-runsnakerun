@@ -1,10 +1,13 @@
-    #! /usr/bin/env python
+#!/usr/bin/env python
 """The main script for the RunSnakeRun profile viewer"""
+
 import wx, sys, os, logging, traceback
+log = logging.getLogger( __name__ )
 import ConfigParser
 try:
     from wx.py import editor, editwindow
 except ImportError, err:
+    log.info( 'No editor available: %s', err )
     editor = None
 from gettext import gettext as _
 import pstats
@@ -17,13 +20,21 @@ if sys.platform == 'win32':
     windows = True
 else:
     windows = False
+if sys.platform == 'darwin':
+    osx = True 
+else:
+    osx = False
 
 log = logging.getLogger(__name__)
 
 ID_OPEN = wx.NewId()
 ID_OPEN_MEMORY = wx.NewId()
 ID_EXIT = wx.NewId()
-ID_PACKAGE_VIEW = wx.NewId()
+
+ID_TREE_TYPE = wx.NewId()
+
+#ID_PACKAGE_VIEW = wx.NewId()
+
 ID_PERCENTAGE_VIEW = wx.NewId()
 ID_ROOT_VIEW = wx.NewId()
 ID_BACK_VIEW = wx.NewId()
@@ -68,7 +79,7 @@ PROFILE_VIEW_COLUMNS = [
     ),
     listviews.ColumnDefinition(
         name = _('Cum'),
-        attribute = 'cummulative',
+        attribute = 'cumulative',
         format = '%0.5f',
         percentPossible = True,
         targetWidth = 50,
@@ -77,7 +88,7 @@ PROFILE_VIEW_COLUMNS = [
     ),
     listviews.ColumnDefinition(
         name = _('/Call'),
-        attribute = 'cummulativePer',
+        attribute = 'cumulativePer',
         format = '%0.5f',
         defaultOrder = False,
         targetWidth = 50,
@@ -178,11 +189,14 @@ class MainFrame(wx.Frame):
     """The root frame for the display of a single data-set"""
     loader = None
     percentageView = False
-    directoryView = False
-    memoryView = False
+    
     historyIndex = -1
     activated_node = None
     selected_node = None
+
+    viewType = 'functions'
+    viewTypeTool = None
+
     TBFLAGS = (
         wx.TB_HORIZONTAL
         #| wx.NO_BORDER
@@ -222,6 +236,7 @@ class MainFrame(wx.Frame):
         self.listControl = listviews.DataView(
             self.leftSplitter,
             columns = PROFILE_VIEW_COLUMNS,
+            name='mainlist',
         )
         self.squareMap = squaremap.SquareMap(
             self.rightSplitter,
@@ -239,18 +254,22 @@ class MainFrame(wx.Frame):
         self.calleeListControl = listviews.DataView(
             self.tabs,
             columns = PROFILE_VIEW_COLUMNS,
+            name='callee',
         )
         self.allCalleeListControl = listviews.DataView(
             self.tabs,
             columns = PROFILE_VIEW_COLUMNS,
+            name='allcallee',
         )
         self.allCallerListControl = listviews.DataView(
             self.tabs,
             columns = PROFILE_VIEW_COLUMNS,
+            name='allcaller',
         )
         self.callerListControl = listviews.DataView(
             self.tabs,
             columns = PROFILE_VIEW_COLUMNS,
+            name='caller',
         )
         self.ProfileListControls = [
             self.listControl,
@@ -297,10 +316,10 @@ class MainFrame(wx.Frame):
         menu.Append(ID_EXIT, _('&Close'), _('Close this RunSnakeRun window'))
         menubar.Append(menu, _('&File'))
         menu = wx.Menu()
-        self.packageMenuItem = menu.AppendCheckItem(
-            ID_PACKAGE_VIEW, _('&File View'),
-            _('View time spent by package/module')
-        )
+#        self.packageMenuItem = menu.AppendCheckItem(
+#            ID_PACKAGE_VIEW, _('&File View'),
+#            _('View time spent by package/module')
+#        )
         self.percentageMenuItem = menu.AppendCheckItem(
             ID_PERCENTAGE_VIEW, _('&Percentage View'),
             _('View time spent as percent of overall time')
@@ -314,7 +333,7 @@ class MainFrame(wx.Frame):
         )
         self.upViewItem = menu.Append(
             ID_UP_VIEW, _('&Up'),
-            _('Go "up" to the parent of this node with the largest cummulative total')
+            _('Go "up" to the parent of this node with the largest cumulative total')
         )
         self.moreSquareViewItem = menu.AppendCheckItem(
             ID_MORE_SQUARE, _('&Hierarchic Squares'),
@@ -323,20 +342,24 @@ class MainFrame(wx.Frame):
 
         # This stuff isn't really all that useful for profiling,
         # it's more about how to generate graphics to describe profiling...
-#        self.deeperViewItem = menu.Append(
-#            ID_DEEPER_VIEW, _('&Deeper'), _('View deeper squaremap views')
-#        )
-#        self.shallowerViewItem = menu.Append(
-#            ID_SHALLOWER_VIEW, _('&Shallower'), _('View shallower squaremap views')
-#        )
+        self.deeperViewItem = menu.Append(
+            ID_DEEPER_VIEW, _('&Deeper'), _('View deeper squaremap views')
+        )
+        self.shallowerViewItem = menu.Append(
+            ID_SHALLOWER_VIEW, _('&Shallower'), _('View shallower squaremap views')
+        )
 #        wx.ToolTip.Enable(True)
         menubar.Append(menu, _('&View'))
+        
+        self.viewTypeMenu =wx.Menu( )
+        menubar.Append(self.viewTypeMenu, _('View &Type'))
+        
         self.SetMenuBar(menubar)
 
         wx.EVT_MENU(self, ID_EXIT, lambda evt: self.Close(True))
         wx.EVT_MENU(self, ID_OPEN, self.OnOpenFile)
         wx.EVT_MENU(self, ID_OPEN_MEMORY, self.OnOpenMemory)
-        wx.EVT_MENU(self, ID_PACKAGE_VIEW, self.OnPackageView)
+        
         wx.EVT_MENU(self, ID_PERCENTAGE_VIEW, self.OnPercentageView)
         wx.EVT_MENU(self, ID_UP_VIEW, self.OnUpView)
         wx.EVT_MENU(self, ID_DEEPER_VIEW, self.OnDeeperView)
@@ -372,7 +395,8 @@ class MainFrame(wx.Frame):
                                             tsize)
         tb.AddLabelTool(ID_OPEN, "Open", open_bmp, shortHelp="Open",
                         longHelp="Open a (c)Profile trace file")
-        tb.AddSeparator()
+        if not osx:
+            tb.AddSeparator()
 #        self.Bind(wx.EVT_TOOL, self.OnOpenFile, id=ID_OPEN)
         self.rootViewTool = tb.AddLabelTool(
             ID_ROOT_VIEW, _("Root View"),
@@ -389,7 +413,8 @@ class MainFrame(wx.Frame):
             wx.ArtProvider.GetBitmap(wx.ART_GO_UP, wx.ART_TOOLBAR, tsize),
             shortHelp=_("Go one level up the call tree (highest-percentage parent)")
         )
-        tb.AddSeparator()
+        if not osx:
+            tb.AddSeparator()
         # TODO: figure out why the control is sizing the label incorrectly on Linux
         self.percentageViewTool = wx.CheckBox(tb, -1, _("Percent    "))
         self.percentageViewTool.SetToolTip(wx.ToolTip(
@@ -398,13 +423,49 @@ class MainFrame(wx.Frame):
         wx.EVT_CHECKBOX(self.percentageViewTool,
                         self.percentageViewTool.GetId(), self.OnPercentageView)
 
-        self.packageViewTool = wx.CheckBox(tb, -1, _("File View    "))
-        self.packageViewTool.SetToolTip(wx.ToolTip(
-            _("Switch between call-hierarchy and package/module/function hierarchy")))
-        tb.AddControl(self.packageViewTool)
-        wx.EVT_CHECKBOX(self.packageViewTool, self.packageViewTool.GetId(),
-                        self.OnPackageView)
+        self.viewTypeTool= wx.Choice( tb, -1, choices= getattr(self.loader,'ROOTS',[]) )
+        self.viewTypeTool.SetToolTip(wx.ToolTip(
+            _("Switch between different hierarchic views of the data")))
+        wx.EVT_CHOICE( self.viewTypeTool, self.viewTypeTool.GetId(), self.OnViewTypeTool )
+        tb.AddControl( self.viewTypeTool )
         tb.Realize()
+    
+    def OnViewTypeTool( self, event ):
+        """When the user changes the selection, make that our selection"""
+        new = self.viewTypeTool.GetStringSelection()
+        if new != self.viewType:
+            self.viewType = new
+            self.OnRootView( event )
+    
+    def ConfigureViewTypeChoices( self, event=None ):
+        """Configure the set of View types in the toolbar (and menus)"""
+        self.viewTypeTool.SetItems( getattr( self.loader, 'ROOTS', [] ))
+        if self.loader and self.viewType in self.loader.ROOTS:
+            self.viewTypeTool.SetSelection( self.loader.ROOTS.index( self.viewType ))
+            
+        # configure the menu with the available choices...
+        def chooser( typ ):
+            def Callback( event ):
+                if typ != self.viewType:
+                    self.viewType = typ 
+                    self.OnRootView( event )
+            return Callback
+        # Clear all previous items
+        for item in self.viewTypeMenu.GetMenuItems():
+            self.viewTypeMenu.DeleteItem( item )
+        if self.loader and self.loader.ROOTS:
+            for root in self.loader.ROOTS:
+                item = wx.MenuItem( 
+                    self.viewTypeMenu, -1, root.title(), 
+                    _("View hierarchy by %(name)s")%{
+                        'name': root.title(),
+                    },
+                    kind=wx.ITEM_RADIO,
+                )
+                item.SetCheckable( True )
+                self.viewTypeMenu.AppendItem( item )
+                item.Check( root == self.viewType )
+                wx.EVT_MENU( self, item.GetId(), chooser( root ))
 
     def OnOpenFile(self, event):
         """Request to open a new profile file"""
@@ -433,17 +494,17 @@ class MainFrame(wx.Frame):
 
     def OnShallowerView(self, event):
         if not self.squareMap.max_depth:
-            new_depth = self.squareMap.max_depth_seen or 0 - 5
+            new_depth = self.squareMap.max_depth_seen or 0 - 1
         else:
-            new_depth = self.squareMap.max_depth - 5
+            new_depth = self.squareMap.max_depth - 1
         self.squareMap.max_depth = max((1, new_depth))
         self.squareMap.Refresh()
 
     def OnDeeperView(self, event):
         if not self.squareMap.max_depth:
-            new_depth = 5
+            new_depth = 1
         else:
-            new_depth = self.squareMap.max_depth + 5
+            new_depth = self.squareMap.max_depth + 1
         self.squareMap.max_depth = max((self.squareMap.max_depth_seen or 0,
                                         new_depth))
         self.squareMap.Refresh()
@@ -469,7 +530,7 @@ class MainFrame(wx.Frame):
         self.percentageView = percentageView
         self.percentageMenuItem.Check(self.percentageView)
         self.percentageViewTool.SetValue(self.percentageView)
-        total = self.loader.tree.cummulative
+        total = self.adapter.value( self.loader.get_root( self.viewType ) )
         for control in self.ProfileListControls:
             control.SetPercentage(self.percentageView, total)
         self.adapter.SetPercentage(self.percentageView, total)
@@ -477,30 +538,17 @@ class MainFrame(wx.Frame):
     def OnUpView(self, event):
         """Request to move up the hierarchy to highest-weight parent"""
         node = self.activated_node
+        parents = []
+        selected_parent = None
+        
         if node:
-            selected_parent = None
-            if self.memoryView:
-                parents = self.adapter.parents(node)
-                if node['type'] == 'type':
-                    module = ".".join( node['name'].split( '.' )[:-1] )
-                    if module:
-                        for mod in parents:
-                            if mod['type'] == 'module' and mod['name'] == module:
-                                selected_parent = mod 
+            if hasattr( self.adapter, 'best_parent' ):
+                selected_parent = self.adapter.best_parent( node )
             else:
-                if self.directoryView:
-                    tree = pstatsloader.TREE_FILES
-                else:
-                    tree = pstatsloader.TREE_CALLS
-                parents = [
-                    parent for parent in
-                    self.adapter.parents(node)
-                    if getattr(parent, 'tree', pstatsloader.TREE_CALLS) == tree
-                ]
+                parents = self.adapter.parents( node )
             if parents:
                 if not selected_parent:
-                    parents.sort(lambda a, b: cmp(self.adapter.value(node, a),
-                                                  self.adapter.value(node, b)))
+                    parents.sort(key = lambda a: self.adapter.value(node, a))
                     selected_parent = parents[-1]
                 class event:
                     node = selected_parent
@@ -524,6 +572,7 @@ class MainFrame(wx.Frame):
         self.adapter, tree, rows = self.RootNode()
         self.squareMap.SetModel(tree, self.adapter)
         self.RecordHistory()
+        self.ConfigureViewTypeChoices()
 
     def OnNodeActivated(self, event):
         """Double-click or enter on a node in some control..."""
@@ -618,9 +667,17 @@ class MainFrame(wx.Frame):
             self.restoringHistory = False
 
     def load(self, *filenames):
-        """Load our hotshot dataset (iteratively)"""
+        """Load our dataset (iteratively)"""
+        if len(filenames) == 1:
+            if os.path.basename( filenames[0] ) == 'index.coldshot':
+                return self.load_coldshot( os.path.dirname( filenames[0]) )
+            elif os.path.isdir( filenames[0] ):
+                return self.load_coldshot( filenames[0] )
         try:
-            self.SetModel(pstatsloader.PStatsLoader(*filenames))
+            self.loader = pstatsloader.PStatsLoader(*filenames)
+            self.ConfigureViewTypeChoices()
+            self.SetModel( self.loader )
+            self.viewType = self.loader.ROOTS[0]
             self.SetTitle(_("Run Snake Run: %(filenames)s")
                           % {'filenames': ', '.join(filenames)[:120]})
         except (IOError, OSError, ValueError,MemoryError), err:
@@ -631,10 +688,20 @@ class MainFrame(wx.Frame):
                 err=err
             ))
     def load_memory(self, filename ):
-        self.memoryView = True
+        self.viewType = 'memory'
         for view in self.ProfileListControls:
             view.SetColumns( MEMORY_VIEW_COLUMNS )
-        self.SetModel( meliaeloader.load( filename ) )
+        self.loader = meliaeloader.Loader( filename )
+        self.ConfigureViewTypeChoices()
+        self.viewType = self.loader.ROOTS[0]
+        self.SetModel( self.loader )
+    def load_coldshot(self, dirname ):
+        from runsnakerun import coldshotadapter
+        self.loader = coldshotadapter.Loader( dirname )
+        self.loader.load()
+        self.ConfigureViewTypeChoices()
+        self.viewType = self.loader.ROOTS[0]
+        self.SetModel( self.loader )
 
     def SetModel(self, loader):
         """Set our overall model (a loader object) and populate sub-controls"""
@@ -647,19 +714,12 @@ class MainFrame(wx.Frame):
 
     def RootNode(self):
         """Return our current root node and appropriate adapter for it"""
-        if self.memoryView:
-            adapter = meliaeadapter.MeliaeAdapter()
-            tree,rows = self.loader 
-        else:
-            if self.directoryView:
-                adapter = pstatsadapter.DirectoryViewAdapter()
-                tree = self.loader.location_tree
-                rows = self.loader.location_rows
-            else:
-                adapter = pstatsadapter.PStatsAdapter()
-                tree = self.loader.tree
-                rows = self.loader.rows
-            adapter.SetPercentage(self.percentageView, self.loader.tree.cummulative)
+        tree = self.loader.get_root( self.viewType )
+        adapter = self.loader.get_adapter( self.viewType )
+        rows = self.loader.get_rows( self.viewType )
+        
+        adapter.SetPercentage(self.percentageView, adapter.value( tree ))
+        
         return adapter, tree, rows
     
     def SaveState( self, config_parser ):
@@ -676,7 +736,13 @@ class MainFrame(wx.Frame):
         config_parser.set( 'window', 'height', str(size[1]) )
         config_parser.set( 'window', 'x', str(position[0]) )
         config_parser.set( 'window', 'y', str(position[1]) )
+        
+        for control in self.ProfileListControls:
+            control.SaveState( config_parser )
+
         return config_parser
+
+
     def LoadState( self, config_parser ):
         """Set our window state from the given config_parser instance"""
         if (
@@ -701,8 +767,24 @@ class MainFrame(wx.Frame):
             log.error(
                 "Unable to load window preferences, ignoring: %s", traceback.format_exc()
             )
+
+        try:
+            font_size = config_parser.getint('window', 'font_size')
+        except Exception:
+            pass # use the default, by default
+        else:
+            font = wx.SystemSettings_GetFont(wx.SYS_DEFAULT_GUI_FONT)
+            font.SetPointSize(font_size)
+            for ctrl in self.ProfileListControls:
+                ctrl.SetFont(font)
+        
+        for control in self.ProfileListControls:
+            control.LoadState( config_parser )
+        
         self.config = config_parser
         wx.EVT_CLOSE( self, self.OnCloseWindow )
+
+
     def OnCloseWindow( self, event=None ):
         try:
             self.SaveState( self.config )
@@ -716,9 +798,10 @@ class MainFrame(wx.Frame):
 
 class RunSnakeRunApp(wx.App):
     """Basic application for holding the viewing Frame"""
+    handler = wx.PNGHandler()
     def OnInit(self):
         """Initialise the application"""
-        wx.InitAllImageHandlers()
+        wx.Image.AddHandler(self.handler)
         frame = MainFrame( config_parser = load_config())
         frame.Show(True)
         self.SetTopWindow(frame)
@@ -733,9 +816,10 @@ class RunSnakeRunApp(wx.App):
         return True
     
 class MeliaeViewApp(wx.App):
+    handler = wx.PNGHandler()
     def OnInit(self):
         """Initialise the application"""
-        wx.InitAllImageHandlers()
+        wx.Image.AddHandler(self.handler)
         frame = MainFrame( config_parser = load_config())
         frame.Show(True)
         self.SetTopWindow(frame)

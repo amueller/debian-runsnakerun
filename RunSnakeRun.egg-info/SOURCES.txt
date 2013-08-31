@@ -18,9 +18,8 @@ doc/screenshot.png
 doc/toolkit.css
 runsnakerun/__init__.py
 runsnakerun/_meliaejson.py
-runsnakerun/dumbprofile.py
+runsnakerun/coldshotadapter.py
 runsnakerun/homedirectory.py
-runsnakerun/hotshotreader.py
 runsnakerun/listviews.py
 runsnakerun/macshim.py
 runsnakerun/meliaeadapter.py
