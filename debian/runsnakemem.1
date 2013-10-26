@@ -1,0 +1,40 @@
+.\"                                      Hey, EMACS: -*- nroff -*-
+.TH RUNSNAKEMEM 1 "October 26, 2013"
+.SH NAME
+runsnakemem \- GUI utility for Python memory profiling
+.SH SYNOPSIS
+.B runsnakemem
+.RI [file] ...
+.br
+.SH DESCRIPTION
+This manual page documents briefly the
+.B runsnakemem
+command.
+.PP
+\fBrunsnakemem\fP creates a visual map of the profile data gathered by the Profile
+and cProfile Python modules.
+.SH OPTIONS
+.B runsnakemem
+has no options.
+.SH USAGE
+Gather profiling data by running your Python script as in:
+.br
+.B python
+-m cProfile -o <outputfilename> <script-name> <options>
+.PP
+Run
+.B runsnakemem
+on the output file:
+.br
+.B runsnakemem
+<outputfilename>
+.br
+or open the output file from the GUI menu.
+.PP
+More detailed documentation is available at
+.br
+.IR http://www.vrplumber.com/programming/runsnakerun/
+.SH AUTHOR
+runsnakemem was written by Mike C. Fletcher <mcfletch@vrplumber.com>.
+.PP
+This manual page was written by Federico Ceratto <federico.ceratto@gmail.com> for the Debian project and may be used by others.
