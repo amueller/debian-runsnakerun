@@ -1,3 +1,10 @@
+runsnakerun (2.0.4-1) UNRELEASED; urgency=low
+
+  * New upstream release.
+  * Vcs fields updated in debian/control
+
+ -- Federico Ceratto <federico.ceratto@gmail.com>  Sat, 26 Oct 2013 14:01:06 +0100
+
 runsnakerun (2.0.3-1) unstable; urgency=low
 
   * New upstream release (Closes: #685205)
