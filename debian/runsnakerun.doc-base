@@ -1,0 +1,9 @@
+Document: runsnakerun-doc
+Title: RunSnakeRun Manual
+Author: Mike C. Fletcher and contributors
+Abstract: RunSnakeRun documentation
+Section: Programming/Python
+
+Format: HTML
+Index: /usr/share/doc/runsnakerun/index.html
+Files: /usr/share/doc/runsnakerun/*.png /usr/share/doc/runsnakerun/*.css /usr/share/doc/runsnakerun/*.html

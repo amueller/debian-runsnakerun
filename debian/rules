@@ -8,3 +8,9 @@ override_dh_fixperms:
 	find $(CURDIR)/debian/runsnakerun/ -executable -type f -exec chmod -x "{}" \;
 	dh_fixperms
 
+override_dh_installchangelogs:
+	w3m -dump doc/index.html | \
+		awk '/^Releases/,/^ *Copyright/' | \
+		sed '1d;2d;$$d' > runsnakerun.changelog
+	dh_installchangelogs
+	dh_installchangelogs runsnakerun.changelog
