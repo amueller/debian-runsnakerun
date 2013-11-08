@@ -14,7 +14,7 @@ Vcs-Browser: http://anonscm.debian.org/gitweb/?p=collab-maint/runsnakerun.git;a=
 
 Package: runsnakerun
 Architecture: all
-Depends: python-squaremap
+Depends: python-squaremap (>= 1:1.0.3-1)
  , python-setuptools
  , ${python:Depends}
  , ${misc:Depends}
