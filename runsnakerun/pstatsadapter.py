@@ -1,13 +1,17 @@
-import wx, sys, os, logging
-log = logging.getLogger( __name__ )
+import wx
+import os
+import logging
+log = logging.getLogger(__name__)
+
 from squaremap import squaremap
 from runsnakerun import pstatsloader
+
 
 class PStatsAdapter(squaremap.DefaultAdapter):
 
     percentageView = False
     total = 0
-    
+
     TREE = pstatsloader.TREE_CALLS
 
     def value(self, node, parent=None):
@@ -38,7 +42,7 @@ class PStatsAdapter(squaremap.DefaultAdapter):
         """Determine all parents of node in our tree"""
         return [
             parent for parent in
-            getattr( node, 'parents', [] )
+            getattr(node, 'parents', [])
             if getattr(parent, 'tree', self.TREE) == self.TREE
         ]
 
@@ -62,7 +66,7 @@ class PStatsAdapter(squaremap.DefaultAdapter):
         self.percentageView = percent
         self.total = total
 
-    def filename( self, node ):
+    def filename(self, node):
         """Extension to squaremap api to provide "what file is this" information"""
         if not node.directory:
             # TODO: any cases other than built-ins?
@@ -71,11 +75,12 @@ class PStatsAdapter(squaremap.DefaultAdapter):
             # TODO: look up C/Cython/whatever source???
             return None
         return os.path.join(node.directory, node.filename)
-        
+
 
 class DirectoryViewAdapter(PStatsAdapter):
     """Provides a directory-view-only adapter for PStats objects"""
     TREE = pstatsloader.TREE_FILES
+
     def children(self, node):
         if isinstance(node, pstatsloader.PStatGroup):
             return node.children

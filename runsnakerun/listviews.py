@@ -1,7 +1,9 @@
-import wx, sys, os, logging, operator, traceback
+import wx
+import sys
+import logging
 from gettext import gettext as _
 from squaremap import squaremap
-from wx.lib.agw.ultimatelistctrl import UltimateListCtrl,ULC_REPORT,ULC_VIRTUAL,ULC_VRULES,ULC_SINGLE_SEL
+from six import string_types, text_type
 
 if sys.platform == 'win32':
     windows = True
@@ -9,6 +11,7 @@ else:
     windows = False
 
 log = logging.getLogger(__name__)
+
 
 class ColumnDefinition(object):
     """Definition of a given column for display using attribute access"""
@@ -22,30 +25,34 @@ class ColumnDefinition(object):
     percentPossible = False
     targetWidth = None
     getter = None
-    
-    sortDefault=False
+
+    sortDefault = False
 
     def __init__(self, **named):
         for key, value in named.items():
             setattr(self, key, value)
         if self.getter:
-            self.get = self.getter 
+            self.get = self.getter
         else:
-            attribute = self.attribute 
-            def getter( function ):
-                return getattr( function, attribute, None )
+            attribute = self.attribute
+
+            def getter(function):
+                return getattr(function, attribute, None)
             self.get = self.getter = getter
 
-class DictColumn( ColumnDefinition ):
+
+class DictColumn(ColumnDefinition):
+
     def __init__(self, **named):
         for key, value in named.items():
             setattr(self, key, value)
         if self.getter:
-            self.get = self.getter 
+            self.get = self.getter
         else:
-            attribute = self.attribute 
-            def getter( function ):
-                return function.get( attribute, None )
+            attribute = self.attribute
+
+            def getter(function):
+                return function.get(attribute, None)
             self.get = self.getter = getter
 
 
@@ -63,7 +70,7 @@ class DataView(wx.ListCtrl):
         self, parent,
         id=-1,
         pos=wx.DefaultPosition, size=wx.DefaultSize,
-        style=wx.LC_REPORT|wx.LC_VIRTUAL|wx.LC_VRULES|wx.LC_SINGLE_SEL,
+        style=wx.LC_REPORT | wx.LC_VIRTUAL | wx.LC_VRULES | wx.LC_SINGLE_SEL,
         validator=wx.DefaultValidator,
         columns=None,
         sortOrder=None,
@@ -76,7 +83,8 @@ class DataView(wx.ListCtrl):
             self.columns = columns
 
         if not sortOrder:
-            sortOrder = [(x.defaultOrder,x) for x in self.columns if x.sortDefault]
+            sortOrder = [(x.defaultOrder, x)
+                         for x in self.columns if x.sortDefault]
         self.sortOrder = sortOrder or []
         self.sorted = []
         self.CreateControls()
@@ -94,12 +102,13 @@ class DataView(wx.ListCtrl):
         wx.EVT_MOTION(self, self.OnMouseMove)
         wx.EVT_LIST_ITEM_ACTIVATED(self, self.GetId(), self.OnNodeActivated)
         self.CreateColumns()
-    def CreateColumns( self ):
+
+    def CreateColumns(self):
         """Create/recreate our column definitions from current self.columns"""
         self.SetItemCount(0)
         # clear any current columns...
-        for i in range( self.GetColumnCount())[::-1]:
-            self.DeleteColumn( i )
+        for i in range(self.GetColumnCount())[::-1]:
+            self.DeleteColumn(i)
         # now create
         for i, column in enumerate(self.columns):
             column.index = i
@@ -108,17 +117,19 @@ class DataView(wx.ListCtrl):
                 self.SetColumnWidth(i, wx.LIST_AUTOSIZE)
             else:
                 self.SetColumnWidth(i, column.targetWidth)
-    def SetColumns( self, columns, sortOrder=None ):
+
+    def SetColumns(self, columns, sortOrder=None):
         """Set columns to a set of values other than the originals and recreates column controls"""
-        self.columns = columns 
-        self.sortOrder = [(x.defaultOrder,x) for x in self.columns if x.sortDefault]
+        self.columns = columns
+        self.sortOrder = [(x.defaultOrder, x)
+                          for x in self.columns if x.sortDefault]
         self.CreateColumns()
 
     def OnNodeActivated(self, event):
         """We have double-clicked for hit enter on a node refocus squaremap to this node"""
         try:
             node = self.sorted[event.GetIndex()]
-        except IndexError, err:
+        except IndexError:
             log.warn(_('Invalid index in node activated: %(index)s'),
                      index=event.GetIndex())
         else:
@@ -132,7 +143,7 @@ class DataView(wx.ListCtrl):
         """We have selected a node with the list control, tell the world"""
         try:
             node = self.sorted[event.GetIndex()]
-        except IndexError, err:
+        except IndexError:
             log.warn(_('Invalid index in node selected: %(index)s'),
                      index=event.GetIndex())
         else:
@@ -149,7 +160,7 @@ class DataView(wx.ListCtrl):
         if item > -1:
             try:
                 node = self.sorted[item]
-            except IndexError, err:
+            except IndexError:
                 log.warn(_('Invalid index in mouse move: %(index)s'),
                          index=event.GetIndex())
             else:
@@ -190,17 +201,18 @@ class DataView(wx.ListCtrl):
     def OnReorder(self, event):
         """Given a request to reorder, tell us to reorder"""
         column = self.columns[event.GetColumn()]
-        return self.ReorderByColumn( column )
+        return self.ReorderByColumn(column)
 
-    def ReorderByColumn( self, column ):
+    def ReorderByColumn(self, column):
         """Reorder the set of records by column"""
         # TODO: store current selection and re-select after sorting...
-        single_column = self.SetNewOrder( column )
-        self.reorder( single_column = True )
+        single_column = self.SetNewOrder(column)
+        self.reorder(single_column=True)
         self.Refresh()
 
-    def SetNewOrder( self, column ):
-        """Set new sorting order based on column, return whether a simple single-column (True) or multiple (False)"""
+    def SetNewOrder(self, column):
+        """Set new sorting order based on column, return whether a simple
+        single-column (True) or multiple (False)"""
         if column.sortOn:
             # multiple sorts for the click...
             columns = [self.columnByAttribute(attr) for attr in column.sortOn]
@@ -230,10 +242,10 @@ class DataView(wx.ListCtrl):
             columns = self.sortOrder[:1]
         else:
             columns = self.sortOrder
-        for ascending,column in columns[::-1]:
-            # Python 2.2+ guarantees stable sort, so sort by each column in reverse 
-            # order will order by the assigned columns 
-            self.sorted.sort( key=column.get, reverse=(not ascending))
+        for ascending, column in columns[::-1]:
+            # Python 2.2+ guarantees stable sort, so sort by each column in reverse
+            # order will order by the assigned columns
+            self.sorted.sort(key=column.get, reverse=(not ascending))
 
     def integrateRecords(self, functions):
         """Integrate records from the loader"""
@@ -257,7 +269,7 @@ class DataView(wx.ListCtrl):
         try:
             column = self.columns[col]
             value = column.get(self.sorted[item])
-        except IndexError, err:
+        except IndexError:
             return None
         else:
             if value is None:
@@ -267,38 +279,40 @@ class DataView(wx.ListCtrl):
             if column.format:
                 try:
                     return column.format % (value,)
-                except Exception, err:
+                except Exception:
                     log.warn('Column %s could not format %r value: %r',
-                        column.name, type(value), value
-                    )
-                    value = column.get(self.sorted[item] )
-                    if isinstance(value,(unicode,str)):
+                             column.name, type(value), value
+                             )
+                    value = column.get(self.sorted[item])
+                    if isinstance(value, string_types):
                         return value
-                    return unicode(value)
+                    return text_type(value)
             else:
-                if isinstance(value,(unicode,str)):
+                if isinstance(value, string_types):
                     return value
-                return unicode(value)
+                return text_type(value)
 
     def OnGetItemToolTip(self, item, col):
-        return self.OnGetItemText(item, col) # XXX: do something nicer
+        return self.OnGetItemText(item, col)  # XXX: do something nicer
 
-    def SaveState( self, config_parser ):
-        section = 'listctrl-%s'%(self.GetName())
+    def SaveState(self, config_parser):
+        section = 'listctrl-%s' % (self.GetName())
         if not config_parser.has_section(section):
             config_parser.add_section(section)
         for i, dfn in enumerate(self.columns):
             col = self.GetColumn(i)
-            config_parser.set( section, '%s_width'%dfn.attribute, str(col.GetWidth()) )
-    def LoadState( self, config_parser ):
-        section = 'listctrl-%s'%(self.GetName())
+            config_parser.set(section, '%s_width' %
+                              dfn.attribute, str(col.GetWidth()))
+
+    def LoadState(self, config_parser):
+        section = 'listctrl-%s' % (self.GetName())
         if config_parser.has_section(section):
             for i, dfn in enumerate(self.columns):
-                width = '%s_width'%dfn.attribute
+                width = '%s_width' % dfn.attribute
                 if config_parser.has_option(section, width):
                     try:
                         value = int(config_parser.get(section, width))
                     except ValueError:
-                        log.warn( "Unable to restore %s %s", section, width )
+                        log.warn("Unable to restore %s %s", section, width)
                     else:
-                        self.SetColumnWidth(i,value)
+                        self.SetColumnWidth(i, value)
